@@ -1,0 +1,60 @@
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:17.9.1-ce.0
+    container_name: gitlab
+    restart: unless-stopped
+    hostname: gitlab.local
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab.local:8080'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        puma['worker_processes'] = 2
+        puma['min_threads'] = 1
+        puma['max_threads'] = 4
+        puma['port'] = 9292
+        sidekiq['concurrency'] = 5
+        postgresql['shared_buffers'] = "256MB"
+        postgresql['max_connections'] = 100
+        prometheus_monitoring['enable'] = false
+        alertmanager['enable'] = false
+    ports:
+      - "8080:8080"
+      - "2222:22"
+    volumes:
+      - ./data/gitlab/config:/etc/gitlab
+      - ./data/gitlab/logs:/var/log/gitlab
+      - gitlab-data:/var/opt/gitlab   # named volume: virtioFS のソケット制限を回避
+    shm_size: '256m'
+    networks:
+      - gitlab-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/-/readiness"]
+      interval: 60s
+      timeout: 10s
+      retries: 10
+      start_period: 300s
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:v17.9.0
+    container_name: gitlab-runner
+    restart: unless-stopped
+    depends_on:
+      gitlab:
+        condition: service_healthy
+    volumes:
+      - ./data/runner/config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - gitlab-network
+    extra_hosts:
+      - "gitlab.local:host-gateway"
+
+volumes:
+  gitlab-data:
+
+networks:
+  gitlab-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
