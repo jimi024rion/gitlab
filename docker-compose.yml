@@ -1,6 +1,6 @@
 services:
   gitlab:
-    image: gitlab/gitlab-ce:17.9.1-ce.0
+    image: gitlab/gitlab-ce:18.10.3-ce.0
     container_name: gitlab
     restart: unless-stopped
     hostname: gitlab.local
@@ -23,19 +23,19 @@ services:
     volumes:
       - ./data/gitlab/config:/etc/gitlab
       - ./data/gitlab/logs:/var/log/gitlab
-      - gitlab-data:/var/opt/gitlab   # named volume: virtioFS のソケット制限を回避
+      - gitlab-data:/var/opt/gitlab # named volume: virtioFS のソケット制限を回避
     shm_size: '256m'
     networks:
       - gitlab-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/-/readiness"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/-/readiness" ]
       interval: 60s
       timeout: 10s
       retries: 10
       start_period: 300s
 
   gitlab-runner:
-    image: gitlab/gitlab-runner:v17.9.0
+    image: gitlab/gitlab-runner:v18.10.1
     container_name: gitlab-runner
     restart: unless-stopped
     depends_on:
@@ -51,6 +51,7 @@ services:
 
 volumes:
   gitlab-data:
+
 
 networks:
   gitlab-network:
